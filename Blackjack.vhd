@@ -13,12 +13,12 @@ END Blackjack;
 
 
 ARCHITECTURE behavior of Blackjack IS
-  Type DECKOFCARDS is array(0 to 51) of UNSIGNED(3 downto 0);
+  Type DECKOFCARDS is array(0 to 51) of STD_LOGIC_VECTOR(3 downto 0);
   TYPE STATE_TYPE IS (NewGame,Hit,Bust,CounterStart,Counting,Startover);
   SIGNAL state : STATE_TYPE;
-  SIGNAL card  :  INTEGER;
-  signal Counter   : STD_LOGIC;
-  signal card_number : UNSIGNED(3 downto 0);
+  SIGNAL card  :  STD_LOGIC_VECTOR;
+  SIGNAL Counter   : INTEGER range 0 to 51 := 51;
+  SIGNAL card_number : STD_LOGIC_VECTOR;
   SIGNAL DECK  : DECKOFCARDS := ("1011", "1011", "1011", "1011",
                                  "1010", "1010", "0111", "0100",
                                  "1010", "1010", "0111", "0100",
@@ -32,52 +32,59 @@ ARCHITECTURE behavior of Blackjack IS
                                  "1010", "1000", "0101", "0010",
                                  "1010", "1000", "0101", "0010",
                                  "1010", "1000", "0101", "0010");
-
+											
+Begin
 --Counter 
- Process(RESET)
+ Process(RESET,Counter)
  BEGIN
- 
-   if RESET= '0' THEN
+   if (RESET= '0') THEN
     state  <= Startover;
-	end if;
 	 
-    if (Counter = '0') THEN
-      card_number <= '52';
-    else
+	ELSif (Counter= 0) THEN
+      card_number <= 52;
+		
+   else
       card_number <= card_number - 1;
-	 end if;
-end Process;
+		
+	end if;
+ end Process;
 --FSM that controls counter
-process(state,card_number)
-BEGIN
-  CounterStart    <= state;
-  Counter     <= '1';
+
+Process(state,card_number)
+ BEGIN 
+  state    <=CounterStart ;
+  Counter     <= 1;
 
   case state is
   
     When CounterStart =>
 	 if (card_number = 52) THEN
 	   state <=Counting;
+		
+	 else
+	  Counter <= 0;
         end if;
 		  
     When Counting =>
-      Counter    <= '1';
+      Counter    <= 1;
 
       if (card_number = 0) then
         state   <= Startover;
+		else
+		  state<= Counting;
       end if;
 
     When Startover =>
-      Counter <= '0';
+      Counter <= 0;
  
   end case;
-end process;
+end Process;
      --END Counter 
 	  
     PROCESS(CLOCK, RESET)
       BEGIN
 	--Current card in cycle
-		card <= to_integer(DECKOFCARDS(card_number));
+		card <= DECKOFCARDS(card_number);
 	  IF RESET='0' THEN  --Restart Game
 		state <= NewGame;
 	  ELSIF (CLOCK'EVENT AND CLOCK ='1') THEN
@@ -90,14 +97,14 @@ end process;
 			state <= Hit;
 		  
 		  WHEN Hit =>
-		  score <= score+ card;
-		    IF score < 22 THEN
+		  score <= score + card;
+		    IF (score < 22) THEN
 			    state <= Hit;
-			 ELSIF score > 22 THEN
+			 ELSIF (score > 22) THEN
 			    state <= NewGame;
 			 end if;
 	   end case;
      end if;
-	 end process;
+	 end Process;
 	end behavior;
 
